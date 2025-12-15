@@ -1,0 +1,5 @@
+node_modules
+dataExtract
+dataSync
+package-lock.json
+package.json
