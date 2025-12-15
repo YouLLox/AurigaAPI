@@ -54,7 +54,7 @@ Une fois les données synchronisées, vous pouvez utiliser les méthodes suivant
 - `aurigaAPI.getGradeByName(name)`
 - `aurigaAPI.getGradeByType(type)`
 
-**📅 Syllabus (Emploi du temps)**
+**📅 Syllabus (Programme)**
 
 - `aurigaAPI.getAllSyllabus` : Retourne tout le syllabus.
 - `aurigaAPI.getSyllabusByCode(code)`
