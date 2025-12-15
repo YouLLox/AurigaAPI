@@ -53,25 +53,34 @@ Une fois les données synchronisées, vous pouvez utiliser les méthodes suivant
 - `aurigaAPI.getGradeByCode(code)`
 - `aurigaAPI.getGradeByName(name)`
 - `aurigaAPI.getGradeByType(type)`
+- `aurigaAPI.getGradeByGrade(grade)` : Filtrer par note (valeur numérique).
+- `aurigaAPI.getGradeBySemester(semester)` : Filtrer par semestre.
 
 **📅 Syllabus (Programme)**
 
 - `aurigaAPI.getAllSyllabus` : Retourne tout le syllabus (fusionne tous les semestres configurés).
 - `aurigaAPI.getSyllabusByCode(code)`
+- `aurigaAPI.getSyllabusByName(name)`
 - `aurigaAPI.getSyllabusByUE(ue)`
-- `aurigaAPI.getSyllabusBySemester(semester)` : Retourne les cours d'un semestre donné (ex: "03").
+- `aurigaAPI.getSyllabusBySemester(semester)` : Retourne les cours d'un semestre donné (ex: 3).
 - `aurigaAPI.getSyllabusByStartDate(date)`
+- `aurigaAPI.getSyllabusByEndDate(date)`
+- `aurigaAPI.getSyllabusByCredits(credits)`
+- `aurigaAPI.getSyllabusByTime(time)`
 
-_Les objets syllabus contiennent désormais les crédits ECTS et le numéro de semestre._
+_Les objets syllabus et grades contiennent désormais le numéro de semestre._
 
 **👤 Données Utilisateur**
 L'API donne accès à des objets complets pour l'étudiant et ses proches.
 
+- `aurigaAPI.getAllUserData` : Retourne l'objet complet des données utilisateur.
 - `aurigaAPI.getStudentData` : Informations personnelles (Nom, Prénom, Emails, etc.).
 - `aurigaAPI.getHighSchoolData` : Informations sur le baccalauréat.
 - `aurigaAPI.getStudentParent1` : Infos du premier responsable légal.
 - `aurigaAPI.getStudentParent2` : Infos du second responsable légal.
 - `aurigaAPI.getStudentFinancialGuarantor` : Infos du garant financier.
+
+_💡 Astuce : Le code est entièrement documenté avec JSDoc. Votre IDE devrait vous proposer l'autocomplétion et les types des objets (student, parent, grade, syllabus...)._
 
 ## Structure des Dossiers
 

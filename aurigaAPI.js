@@ -1,5 +1,94 @@
 const fs = require("fs");
 
+/**
+ * @typedef {Object} AurigaAPI
+ * @property {string} acces_token
+ */
+
+/**
+ * @typedef {Object} grade
+ * @property {number} code
+ * @property {string} type
+ * @property {string} name
+ * @property {number} semester
+ * @property {number} grade
+ */
+
+/**
+ * @typedef {Object} syllabus
+ * @property {number} id
+ * @property {number} time
+ * @property {string} name
+ * @property {string} UE
+ * @property {number} semester
+ * @property {string} nameFr
+ * @property {number} credits
+ * @property {string} startDate
+ * @property {string} endDate
+ */
+
+/**
+ * @typedef {Object} userData
+ * @property {parent} parent1
+ * @property {parent} parent2
+ * @property {financialGuarantor} financialGuarantor
+ * @property {student} student
+ * @property {highSchool} highSchool
+ */
+
+/**
+ * @typedef {Object} parent
+ * @property {string} firstName
+ * @property {string} lastName
+ * @property {string} email
+ * @property {string} address
+ * @property {string} city
+ * @property {string} zipCode
+ * @property {number} country
+ */
+
+/**
+ * @typedef {Object} financialGuarantor
+ * @property {string} firstName
+ * @property {string} lastName
+ * @property {string} email
+ * @property {string} city
+ * @property {number} country
+ */
+
+/**
+ * @typedef {Object} student
+ * @property {string} schoolMail
+ * @property {string} mail
+ * @property {string} phone
+ * @property {string} firstName
+ * @property {string} lastName
+ * @property {string} birthDate
+ * @property {string} cityOfBirth
+ * @property {string} countryOfBirth
+ * @property {string} gender
+ * @property {adress} adress
+ * @property {string} city
+ * @property {string} country
+ * @property {number} entryYear
+ */
+
+/** 
+ * @typedef {Object} adress
+ * @property {string} street1
+ * @property {string} street2
+ */
+
+/**
+ * @typedef {Object} highSchool
+ * @property {string} option1
+ * @property {string} option2
+ * @property {string} language1
+ * @property {string} language2
+ * @property {string} examType
+ * @property {string} department
+ */
+
 class AurigaAPI {
     #acces_token;
 
@@ -39,90 +128,187 @@ class AurigaAPI {
 
     // --- GRADES ---
 
+    /**
+     * Return a list of all grades
+     * @returns {Array<grade>}
+     */
     get getAllGrades() {
         return this._readJsonFile(this.PATHS.SYNC.GRADES) || [];
     }
 
+    /**
+     * Return a grade by code
+     * @param {number} code 
+     * @returns {grade}
+     */
     getGradeByCode(code) {
         return this.getAllGrades.find(element => element.code === code);
     }
 
+    /**
+     * Return a grade by name
+     * @param {string} name 
+     * @returns {grade}
+     */
     getGradeByName(name) {
         return this.getAllGrades.find(element => element.name === name);
     }
 
+    /**
+     * Return a list of grades by type
+     * @param {string} type 
+     * @returns {Array<grade>}
+     */
     getGradeByType(type) {
         return this.getAllGrades.filter(element => element.type === type);
     }
 
+    /**
+     * Return a list of grades by grade
+     * @param {number} grade 
+     * @returns {Array<grade>}
+     */
     getGradeByGrade(grade) {
         return this.getAllGrades.filter(element => element.grade === grade);
     }
 
+    /**
+     * Return a list of grades by semester
+     * @param {number} semester 
+     * @returns {Array<grade>}
+     */
     getGradeBySemester(semester) {
         return this.getAllGrades.filter(element => element.semester === semester);
     }
 
     // --- SYLLABUS ---
 
+    /**
+     * Return a list of all syllabus
+     * @returns {Array<syllabus>}
+     */
     get getAllSyllabus() {
         return this._readJsonFile(this.PATHS.SYNC.SYLLABUS) || [];
     }
     
+    /**
+     * Return a syllabus by code
+     * @param {number} code 
+     * @returns {syllabus}
+     */
     getSyllabusByCode(code) {
         return this.getAllSyllabus.find(element => element.code === code);
     }
 
+    /**
+     * Return a syllabus by name
+     * @param {string} name 
+     * @returns {syllabus}
+     */
     getSyllabusByName(name) {
         return this.getAllSyllabus.find(element => element.name === name);
     }
 
+    /**
+     * Return a list of syllabus by UE
+     * @param {string} ue 
+     * @returns {Array<syllabus>}
+     */
     getSyllabusByUE(ue) {
         return this.getAllSyllabus.filter(element => element.ue === ue);
     }
 
+    /**
+     * Return a list of syllabus by start date
+     * @param {string} startDate 
+     * @returns {Array<syllabus>}
+     */
     getSyllabusByStartDate(startDate) {
         return this.getAllSyllabus.filter(element => element.startDate === startDate);
     }
 
+    /**
+     * Return a list of syllabus by end date
+     * @param {string} endDate 
+     * @returns {Array<syllabus>}
+     */
     getSyllabusByEndDate(endDate) {
         return this.getAllSyllabus.filter(element => element.endDate === endDate);
     }
 
+    /**
+     * Return a list of syllabus by credits
+     * @param {number} credits 
+     * @returns {Array<syllabus>}
+     */
     getSyllabusByCredits(credits) {
         return this.getAllSyllabus.filter(element => element.credits === credits);
     }
 
+    /**
+     * Return a list of syllabus by time
+     * @param {number} time 
+     * @returns {Array<syllabus>}
+     */
     getSyllabusByTime(time) {
         return this.getAllSyllabus.filter(element => element.time === time);
     }
     
+    /**
+     * Return a list of syllabus by semester
+     * @param {number} semester 
+     * @returns {Array<syllabus>}
+     */
     getSyllabusBySemester(semester) {
         return this.getAllSyllabus.filter(element => element.semester === semester);
     }
 
     // --- USER DATA ---
 
+    /**
+     * Return a list of all user data
+     * @returns {userData}
+     */
     get getAllUserData() {
         return this._readJsonFile(this.PATHS.SYNC.USERDATA) || {};
     }
 
+    /**
+     * Return the student data
+     * @returns {student}
+     */
     get getStudentData() {
         return this.getAllUserData.student;
     }
 
+    /**
+     * Return the high school data
+     * @returns {highSchool}
+     */
     get getHighSchoolData() {
         return this.getAllUserData.highSchool;
     }
     
+    /**
+     * Return the student parent 1
+     * @returns {parent}
+     */
     get getStudentParent1() {
         return this.getAllUserData.parent1;
     }
 
+    /**
+     * Return the student parent 2
+     * @returns {parent}
+     */
     get getStudentParent2() {
         return this.getAllUserData.parent2;
     }
 
+    /**
+     * Return the student financial guarantor
+     * @returns {financialGuarantor}
+     */
     get getStudentFinancialGuarantor() {
         return this.getAllUserData.financialGuarantor;
     }
@@ -137,7 +323,7 @@ class AurigaAPI {
 
         await fs.promises.mkdir("./dataSync", { recursive: true });
 
-        if (!grades || !syllabus || !userData) {
+        if (!grades || !syllabus || !syllabus2 || !userData) {
             console.error("Error: Unable to synchronize, extracted data is missing.");
             return;
         }
@@ -148,7 +334,7 @@ class AurigaAPI {
                 "type": element[4],
                 "name": element[2],
                 "semester": parseInt(String(element[2]).split("_")[4].split("S")[1]),
-                "grade": element[1]
+                "grade": parseFloat(element[1])
             }
         }), null, 2));
 
@@ -222,7 +408,7 @@ class AurigaAPI {
                 "option2": userData.person.siseBacOption2.code,
                 "language1": userData.person.siseLanguage1.caption.en,
                 "language2": userData.person.siseLanguage2.caption.en,
-                "exameType": userData.person.siseBacSeries.code,
+                "examType": userData.person.siseBacSeries.code,
                 "department": userData.person.bacFrenchDepartment.code
             }
         }
@@ -282,13 +468,20 @@ class AurigaAPI {
             await postDataToAuriga("menuEntries/166/searchResult?size=100&page=1&sort=id", syllabusPayload2, this.PATHS.EXTRACT.SYLLABUS2);
             await postDataToAuriga("menuEntries/1036/searchResult?size=100&page=1&sort=id&disableWarnings=true", gradesPayload, this.PATHS.EXTRACT.GRADES);
             await this.#dataSync();
-            await fs.promises.rm("./dataExtract", { recursive: true, force: true });
+            //await fs.promises.rm("./dataExtract", { recursive: true, force: true });
 
         } catch (error) {
             console.error("Error during creation/synchronization:", error);
-            await fs.promises.rm("./dataExtract", { recursive: true, force: true });
+            //await fs.promises.rm("./dataExtract", { recursive: true, force: true });
             return false;
         }
         return true;
     }
+    /*caller() {
+        this.#dataSync();
+    }*/
 }
+
+const aurigaAPI = new AurigaAPI("eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJhU2xwY2lHa2wzMExiakl4LW9KZWkxNFFOR0xEY2Z3TDI2RUtubXlTNjNvIn0.eyJleHAiOjE3NjU4MTMzNjEsImlhdCI6MTc2NTgxMzMwMSwiYXV0aF90aW1lIjoxNzY1ODEzMzAwLCJqdGkiOiI5Y2RmNjUxNy0zYTRkLTQ3Y2YtYjE5Ny0xZDY1M2MzNmQxMGIiLCJpc3MiOiJodHRwczovL2lvbmlzZXBpdGEtYXV0aC5ucC1hdXJpZ2EubmZyYW5jZS5uZXQvYXV0aC9yZWFsbXMvbnBpb25pc2VwaXRhIiwiYXVkIjpbIm5wLWFwaSIsImFjY291bnQiXSwic3ViIjoiN2MwOGZhNWUtMzEzNy00ODZhLThhOWEtMzJjNTIyYTkyZTY0IiwidHlwIjoiQmVhcmVyIiwiYXpwIjoibnAtZnJvbnQiLCJub25jZSI6IjNkMTlhN2E5LTc2NDAtNGEwYy05NDJmLWQ2YzJhZDExNDFmMCIsInNlc3Npb25fc3RhdGUiOiJiMzdkNTI4OS1hNDgyLTQ0MDMtOThkNS0yMGEyOWU2YTFlOTIiLCJhbGxvd2VkLW9yaWdpbnMiOlsiaHR0cHM6Ly9pb25pc2VwaXRhLXRlc3QubnAtYXVyaWdhLm5mcmFuY2UubmV0IiwiaHR0cHM6Ly9hdXJpZ2EuZXBpdGEuZnIiLCJodHRwczovL2lvbmlzZXBpdGEtcHJlcHJvZC5ucC1hdXJpZ2EubmZyYW5jZS5uZXQiLCJodHRwczovL2F1cmlnYS1wcnAuZXBpdGEuZnIiLCJodHRwczovL2F1cmlnYS10ZXN0LmVwaXRhLmZyIiwiaHR0cHM6Ly9pb25pc2VwaXRhLXByb2R1Y3Rpb24ubnAtYXVyaWdhLm5mcmFuY2UubmV0Il0sInJlYWxtX2FjY2VzcyI6eyJyb2xlcyI6WyJvZmZsaW5lX2FjY2VzcyIsInVtYV9hdXRob3JpemF0aW9uIiwiZGVmYXVsdC1yb2xlcy1ucCJdfSwicmVzb3VyY2VfYWNjZXNzIjp7ImFjY291bnQiOnsicm9sZXMiOlsibWFuYWdlLWFjY291bnQiLCJtYW5hZ2UtYWNjb3VudC1saW5rcyIsInZpZXctcHJvZmlsZSJdfX0sInNjb3BlIjoib3BlbmlkIHByb2ZpbGUgZW1haWwiLCJzaWQiOiJiMzdkNTI4OS1hNDgyLTQ0MDMtOThkNS0yMGEyOWU2YTFlOTIiLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwibmFtZSI6IkdhZWwgQmVubWFoaWVkZGluZSIsInByZWZlcnJlZF91c2VybmFtZSI6ImdhZWwuYmVubWFoaWVkZGluZUBlcGl0YS5mciIsImdpdmVuX25hbWUiOiJHYWVsIiwiZmFtaWx5X25hbWUiOiJCZW5tYWhpZWRkaW5lIiwiZW1haWwiOiJnYWVsLmJlbm1haGllZGRpbmVAZXBpdGEuZnIifQ.VzWo-zM9tOcfilNKrLVkb_-wOpoIMA8gIXOgZVrfp40l7mI2Q-cecfen9DrtH0eAV14_EOvkaG0qNllC1MyjWRsbT9x_OPhcCiPgIMNcprb9jm_41vfMUCAWT-LePTAvtO6yBqtMHpN2LT5zRK0bq7Z_nuAtcAzJWl1qoXlIF9NVkk3AJN80xgobguZk3W4kQySdHHauSzNPfT4yihbiWUneNOF4YCuJhKzNo66D6TOm7UPR66dOgVTmTZimuQJF15-eRXpKo4Q2cwEf-aVxz6c7NKpUXlS6w2cozSiCq9HoRiRXfrjso7u_Sjy5wWpFLY_dYcjuSxzLToQLm1nPEw");
+//aurigaAPI.caller();
+aurigaAPI.create();
