@@ -59,6 +59,10 @@ class AurigaAPI {
         return this.getAllGrades.filter(element => element.grade === grade);
     }
 
+    getGradeBySemester(semester) {
+        return this.getAllGrades.filter(element => element.semester === semester);
+    }
+
     // --- SYLLABUS ---
 
     get getAllSyllabus() {
@@ -143,6 +147,7 @@ class AurigaAPI {
                 "code": element[0],
                 "type": element[4],
                 "name": element[2],
+                "semester": parseInt(String(element[2]).split("_")[4].split("S")[1]),
                 "grade": element[1]
             }
         }), null, 2));
