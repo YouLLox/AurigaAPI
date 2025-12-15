@@ -40,7 +40,7 @@ Pour lancer la récupération et la synchronisation des données, appelez simple
 await aurigaAPI.create();
 ```
 
-_Note : Cette méthode télécharge les données temporairement dans `dataExtract/`, génère les fichiers formattés dans `dataSync/`, puis supprime le dossier `dataExtract/`._
+_Note : Cette méthode télécharge les données temporairement dans `dataExtract/`, génère les fichiers formatés dans `dataSync/`, puis supprime le dossier `dataExtract/`._
 _En cas d'erreur (affichée en anglais dans la console), le dossier temporaire est également nettoyé._
 
 ### Lecture des Données
@@ -65,7 +65,6 @@ Une fois les données synchronisées, vous pouvez utiliser les méthodes suivant
 - `aurigaAPI.getSyllabusBySemester(semester)` : Retourne les cours d'un semestre donné (ex: 3).
 - `aurigaAPI.getSyllabusByStartDate(date)`
 - `aurigaAPI.getSyllabusByEndDate(date)`
-- `aurigaAPI.getSyllabusByCredits(credits)`
 - `aurigaAPI.getSyllabusByTime(time)`
 
 _Les objets syllabus et grades contiennent désormais le numéro de semestre._

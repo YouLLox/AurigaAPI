@@ -5,6 +5,8 @@ const fs = require("fs");
  * @property {string} acces_token
  */
 
+//////////// Grades ////////////
+
 /**
  * @typedef {Object} grade
  * @property {number} code
@@ -14,18 +16,100 @@ const fs = require("fs");
  * @property {number} grade
  */
 
+//////////// Syllabus ////////////
+
 /**
  * @typedef {Object} syllabus
  * @property {number} id
- * @property {number} time
- * @property {string} name
  * @property {string} UE
  * @property {number} semester
- * @property {string} nameFr
- * @property {number} credits
+ * @property {string} name
+ * @property {string} code
+ * @property {number} minScore
+ * @property {number} duration
+ * @property {period} period
+ * @property {Array<exam>} exams
+ * @property {courseDescription} courseDescription
+ * @property {caption} caption
+ * @property {Array<responsables>} responsables
+ * @property {Array<instructorValidator>} instructorsValidator
+ * @property {Array<instructorEditor>} instructorsEditors
+ * @property {Array<activity>} activities
+ * @property {Array<location>} locations
+ */
+
+/**
+ * @typedef {Object} period
  * @property {string} startDate
  * @property {string} endDate
  */
+
+/**
+ * @typedef {Object} exam
+ * @property {number} id
+ * @property {description} description
+ * @property {string} type
+ * @property {string} typeName
+ * @property {number} weighting
+ */
+
+/**
+ * @typedef {Object} description
+ * @property {string} fr
+ * @property {string} en
+ */
+
+/** 
+ * @typedef {Object} courseDescription
+ * @property {description} coursPlan
+ * @property {Array<description>} expected
+ */
+
+/**
+ * @typedef {Object} caption
+ * @property {string} name
+ * @property {description} goals
+ * @property {description} program
+ */
+
+/**
+ * @typedef {Object} responsables
+ * @property {number} uid
+ * @property {string} login
+ * @property {string} lastName
+ * @property {string} firstName
+ */
+
+/**
+ * @typedef {Object} instructorValidator
+ * @property {number} uid
+ * @property {string} login
+ * @property {string} lastName
+ * @property {string} firstName
+ */
+
+/**
+ * @typedef {Object} instructorEditor
+ * @property {number} uid
+ * @property {string} login
+ * @property {string} lastName
+ * @property {string} firstName
+ */
+
+/**
+ * @typedef {Object} activity
+ * @property {number} id
+ * @property {string} type
+ * @property {string} typeName
+ */
+
+/**
+ * @typedef {Object} location
+ * @property {string} code
+ * @property {string} name
+ */
+
+//////////// UserData ////////////
 
 /**
  * @typedef {Object} userData
@@ -101,7 +185,6 @@ class AurigaAPI {
     EXTRACT: {
       GRADES: "dataExtract/gradesData.json",
       SYLLABUS: "dataExtract/syllabusData.json",
-      SYLLABUS2: "dataExtract/syllabus2Data.json",
       USERDATA: "dataExtract/userData.json"
     },
     PAYLOADS: {
@@ -215,7 +298,7 @@ class AurigaAPI {
    * @returns {Array<syllabus>}
    */
   getSyllabusByUE(ue) {
-    return this.getAllSyllabus.filter(element => element.ue === ue);
+    return this.getAllSyllabus.filter(element => element.UE === ue);
   }
 
   /**
@@ -234,15 +317,6 @@ class AurigaAPI {
    */
   getSyllabusByEndDate(endDate) {
     return this.getAllSyllabus.filter(element => element.endDate === endDate);
-  }
-
-  /**
-   * Return a list of syllabus by credits
-   * @param {number} credits 
-   * @returns {Array<syllabus>}
-   */
-  getSyllabusByCredits(credits) {
-    return this.getAllSyllabus.filter(element => element.credits === credits);
   }
 
   /**
@@ -318,12 +392,11 @@ class AurigaAPI {
   async #dataSync() {
     const grades = this._readJsonFile(this.PATHS.EXTRACT.GRADES);
     const syllabus = this._readJsonFile(this.PATHS.EXTRACT.SYLLABUS);
-    const syllabus2 = this._readJsonFile(this.PATHS.EXTRACT.SYLLABUS2);
     const userData = this._readJsonFile(this.PATHS.EXTRACT.USERDATA);
 
     await fs.promises.mkdir("./dataSync", { recursive: true });
 
-    if (!grades || !syllabus || !syllabus2 || !userData) {
+    if (!grades || !syllabus || !userData) {
       console.error("Error: Unable to synchronize, extracted data is missing.");
       return;
     }
@@ -338,23 +411,88 @@ class AurigaAPI {
       }
     }), null, 2));
 
-    const allSyllabusLines = [...syllabus.content.lines, ...syllabus2.content.lines];
-
-    fs.writeFileSync(this.PATHS.SYNC.SYLLABUS, JSON.stringify(allSyllabusLines.map(element => {
+    fs.writeFileSync(this.PATHS.SYNC.SYLLABUS, JSON.stringify(syllabus.map(element => {
       return {
-        "id": element[0],
-        "time": element[6],
-        "name": element[2],
-        "UE": String(element[2]).split("_")[5],
-        "semester": parseInt(String(element[2]).split("_")[4].split("S")[1]),
-        "nameFr": element[3].fr,
-        "credits": element[7],
-        "startDate": element[4],
-        "endDate": element[5],
+        "id": element.id,
+        "UE": String(element.documents[0].fileName).split("_")[5],
+        "semester": parseInt(String(element.documents[0].fileName).split("_")[4].split("S")[1]),
+        "name": element.documents[0].fileName,
+        "code": element.field.code,
+        "minScore": element.customAttributes.miniScore,
+        "duration": element.duration,
+        "period": {
+          "startDate": element.period.startDate,
+          "endDate": element.period.endDate
+        },
+        "exams": element.syllabusAssessmentComponents.map(note => {
+          return {
+            "id": note.id,
+            "description": note.description ? { "fr": note.description.fr, "en": note.description.en } : {},
+            "type": note.examType.code,
+            "typeName": note.examType.caption.fr,
+            "weighting": note.weighting,
+          }
+        }),
+        "courseDescription": {
+          "coursPlan": element.customAttributes.CoursePlan,
+          "expected": Object.keys(element.customAttributes).filter(key => key.startsWith("AAV")).map(key => {
+            const expected = element.customAttributes[key];
+            return {
+              "fr": expected.fr,
+              "en": expected.en
+            }
+          }),
+        },
+        "caption": {
+          "name": element.caption.fr,
+          "goals": element.outline ? {
+            "fr": element.outline.fr,
+            "en": element.outline.en
+          } : {},
+          "program": element.learningOutcome ? {
+            "fr": element.learningOutcome.fr,
+            "en": element.learningOutcome.en
+          } : {}
+        },
+        "responsables": element.syllabusResponsibles ? element.syllabusResponsibles.map(responsable => {
+          return {
+            "uid": responsable.person.customAttributes.UID,
+            "login": responsable.person.customAttributes.LOGIN,
+            "lastName": responsable.person.currentLastName,
+            "firstName": responsable.person.currentFirstName
+          }
+        }) : [],
+        "instructorsValidator": element.syllabusInstructorValidators ? element.syllabusInstructorValidators.map(instructor => {
+          return {
+            "uid": instructor.person.customAttributes.UID,
+            "login": instructor.person.customAttributes.LOGIN,
+            "lastName": instructor.person.currentLastName,
+            "firstName": instructor.person.currentFirstName
+          }
+        }) : [],
+        "instructorsEditors": element.syllabusInstructorEditors ? element.syllabusInstructorEditors.map(instructor => {
+          return {
+            "uid": instructor.person.customAttributes.UID,
+            "login": instructor.person.customAttributes.LOGIN,
+            "lastName": instructor.person.currentLastName,
+            "firstName": instructor.person.currentFirstName
+          }
+        }) : [],
+        "activities": element.syllabusActivityTypes ? element.syllabusActivityTypes.map(activity => {
+          return {
+            "id": activity.id,
+            "type": activity.activityType.code,
+            "typeName": activity.activityType.caption.fr,
+          }
+        }) : [],
+        "locations": element.syllabusSites ? element.syllabusSites.map(site => {
+          return {
+            "code": site.site.code,
+            "name": site.site.caption.fr,
+          }
+        }) : []
       }
     }), null, 2));
-
-
 
     const userDataSync = {
       "parent1": {
@@ -415,6 +553,39 @@ class AurigaAPI {
     fs.writeFileSync(this.PATHS.SYNC.USERDATA, JSON.stringify(userDataSync, null, 2));
   }
 
+  async #getSyllabuses() {
+    const syllabusPayload = this._readJsonFile(this.PATHS.PAYLOADS.SYLLABUS);
+    const syllabusPayload2 = this._readJsonFile(this.PATHS.PAYLOADS.SYLLABUS2);
+    const url = "menuEntries/166/searchResult?size=100&page=1&sort=id";
+
+    const sylabuses = [];
+
+    const postDataToAuriga = async (endpoint, payload) => {
+      const response = await fetch(`https://auriga.epita.fr/api/${endpoint}`, {
+        method: "POST",
+        headers: {
+          "Authorization": "Bearer " + this.#acces_token,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(payload)
+      });
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(`Failed to fetch data from Auriga API. Status: ${response.status} ${response.statusText}. Response: ${text}`);
+      }
+      const data = await response.json();
+      sylabuses.push(...data.content.lines.map(line => line[0]));
+    };
+
+    if (!syllabusPayload || !syllabusPayload2) {
+      throw new Error("Payloads not found. Check the payloads folder.");
+    }
+    await postDataToAuriga(url, syllabusPayload);
+    await postDataToAuriga(url, syllabusPayload2);
+
+    return [...new Set(sylabuses)];
+  }
+
   async create() {
     if (!this.#acces_token) {
       console.error("Error: Missing token. Please pass the token as a parameter to the create() method.");
@@ -433,7 +604,25 @@ class AurigaAPI {
           throw new Error("Failed to fetch data from Auriga API");
         }
         const data = await response.json();
-        fs.writeFileSync(file, JSON.stringify(data, null, 2));
+
+        if (file.includes("syllabus")) {
+          let currentContent = [];
+          if (fs.existsSync(file)) {
+            try {
+              const fileData = fs.readFileSync(file, "utf8");
+              if (fileData.trim()) {
+                currentContent = JSON.parse(fileData);
+                if (!Array.isArray(currentContent)) currentContent = [currentContent];
+              }
+            } catch (e) {
+              currentContent = [];
+            }
+          }
+          currentContent.push(data);
+          fs.writeFileSync(file, JSON.stringify(currentContent, null, 2));
+        } else {
+          fs.writeFileSync(file, JSON.stringify(data, null, 2));
+        }
         return true;
       };
       const postDataToAuriga = async (endpoint, payload, file) => {
@@ -456,23 +645,23 @@ class AurigaAPI {
 
       await getDataFromAuriga("me", this.PATHS.EXTRACT.USERDATA);
 
-      const syllabusPayload = this._readJsonFile(this.PATHS.PAYLOADS.SYLLABUS);
-      const syllabusPayload2 = this._readJsonFile(this.PATHS.PAYLOADS.SYLLABUS2);
-      const gradesPayload = this._readJsonFile(this.PATHS.PAYLOADS.GRADES);
+      const sylabuses = await this.#getSyllabuses();
+      sylabuses.forEach(element => {
+        getDataFromAuriga(`menuEntries/166/syllabuses/${element}`, this.PATHS.EXTRACT.SYLLABUS);
+      });
 
-      if (!syllabusPayload || !gradesPayload) {
+      const gradesPayload = this._readJsonFile(this.PATHS.PAYLOADS.GRADES);
+      if (!gradesPayload) {
         throw new Error("Payloads not found. Check the payloads folder.");
       }
-
-      await postDataToAuriga("menuEntries/166/searchResult?size=100&page=1&sort=id", syllabusPayload, this.PATHS.EXTRACT.SYLLABUS);
-      await postDataToAuriga("menuEntries/166/searchResult?size=100&page=1&sort=id", syllabusPayload2, this.PATHS.EXTRACT.SYLLABUS2);
       await postDataToAuriga("menuEntries/1036/searchResult?size=100&page=1&sort=id&disableWarnings=true", gradesPayload, this.PATHS.EXTRACT.GRADES);
+
       await this.#dataSync();
       //await fs.promises.rm("./dataExtract", { recursive: true, force: true });
 
     } catch (error) {
       console.error("Error during creation/synchronization:", error);
-      await fs.promises.rm("./dataExtract", { recursive: true, force: true });
+      //await fs.promises.rm("./dataExtract", { recursive: true, force: true });
       return false;
     }
     return true;
