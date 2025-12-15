@@ -12,10 +12,12 @@ class AurigaAPI {
         EXTRACT: {
             GRADES: "dataExtract/gradesData.json",
             SYLLABUS: "dataExtract/syllabusData.json",
+            SYLLABUS2: "dataExtract/syllabus2Data.json",
             USERDATA: "dataExtract/userData.json"
         },
         PAYLOADS: {
             SYLLABUS: "payloads/syllabusPayload.json",
+            SYLLABUS2: "payloads/syllabus2Payload.json",
             GRADES: "payloads/gradesPayload.json"
         }
     };
@@ -83,6 +85,18 @@ class AurigaAPI {
         return this.getAllSyllabus.filter(element => element.endDate === endDate);
     }
 
+    getSyllabusByCredits(credits) {
+        return this.getAllSyllabus.filter(element => element.credits === credits);
+    }
+
+    getSyllabusByTime(time) {
+        return this.getAllSyllabus.filter(element => element.time === time);
+    }
+    
+    getSyllabusBySemester(semester) {
+        return this.getAllSyllabus.filter(element => element.semester === semester);
+    }
+
     // --- USER DATA ---
 
     get getAllUserData() {
@@ -114,6 +128,7 @@ class AurigaAPI {
     async #dataSync() {
         const grades = this._readJsonFile(this.PATHS.EXTRACT.GRADES);
         const syllabus = this._readJsonFile(this.PATHS.EXTRACT.SYLLABUS);
+        const syllabus2 = this._readJsonFile(this.PATHS.EXTRACT.SYLLABUS2);
         const userData = this._readJsonFile(this.PATHS.EXTRACT.USERDATA);
 
         await fs.promises.mkdir("./dataSync", { recursive: true });
@@ -132,16 +147,23 @@ class AurigaAPI {
             }
         }), null, 2));
 
-        fs.writeFileSync(this.PATHS.SYNC.SYLLABUS, JSON.stringify(syllabus.content.lines.map(element => {
+        const allSyllabusLines = [...syllabus.content.lines, ...syllabus2.content.lines];
+
+        fs.writeFileSync(this.PATHS.SYNC.SYLLABUS, JSON.stringify(allSyllabusLines.map(element => {
             return {
-                "code": element[0],
+                "id": element[0],
+                "time": element[6],
                 "name": element[2],
                 "UE": String(element[2]).split("_")[5],
+                "semester": String(element[2]).split("_")[4].split("S")[1],
                 "nameFr": element[3].fr,
+                "credits": element[7],
                 "startDate": element[4],
                 "endDate": element[5],
             }
         }), null, 2));
+
+
 
         const userDataSync = {
             "parent1": {
@@ -244,6 +266,7 @@ class AurigaAPI {
             await getDataFromAuriga("me", this.PATHS.EXTRACT.USERDATA);
 
             const syllabusPayload = this._readJsonFile(this.PATHS.PAYLOADS.SYLLABUS);
+            const syllabusPayload2 = this._readJsonFile(this.PATHS.PAYLOADS.SYLLABUS2);
             const gradesPayload = this._readJsonFile(this.PATHS.PAYLOADS.GRADES);
 
             if (!syllabusPayload || !gradesPayload) {
@@ -251,9 +274,10 @@ class AurigaAPI {
             }
 
             await postDataToAuriga("menuEntries/166/searchResult?size=100&page=1&sort=id", syllabusPayload, this.PATHS.EXTRACT.SYLLABUS);
+            await postDataToAuriga("menuEntries/166/searchResult?size=100&page=1&sort=id", syllabusPayload2, this.PATHS.EXTRACT.SYLLABUS2);
             await postDataToAuriga("menuEntries/1036/searchResult?size=100&page=1&sort=id&disableWarnings=true", gradesPayload, this.PATHS.EXTRACT.GRADES);
             await this.#dataSync();
-            await fs.promises.rm("./dataExtract", { recursive: true, force: true });
+            //await fs.promises.rm("./dataExtract", { recursive: true, force: true });
 
         } catch (error) {
             console.error("Error during creation/synchronization:", error);
