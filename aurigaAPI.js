@@ -1,8 +1,75 @@
 const fs = require("fs");
+const { start } = require("repl");
 
 /**
  * @typedef {Object} AurigaAPI
  * @property {string} acces_token
+ */
+
+
+///////////// EDT ////////////
+/**
+ * @typedef {Object} edt
+ * @property {number} id
+ * @property {name} name
+ * @property {string} UE
+ * @property {string} day
+ * @property {string} startTime
+ * @property {string} endTime
+ * @property {number} duration
+ * @property {string} description
+ * @property {string} timeZone
+ * @property {activityType} activityType
+ * @property {Array<instructor>} instructors
+ * @property {Array<class>} class
+ * @property {Array<location>} location
+ */
+
+/**
+ * @typedef {Object} name
+ * @property {string} code
+ * @property {string} name
+ */
+
+/**
+ * @typedef {Object} activityType
+ * @property {string} code
+ * @property {string} name
+ * @property {boolean} isExam
+ */
+
+/**
+ * @typedef {Object} instructor
+ * @property {string} firstName
+ * @property {string} lastName
+ * @property {string} login
+ */
+
+/**
+ * @typedef {Object} class
+ * @property {string} code
+ * @property {string} name
+ */
+
+/**
+ * @typedef {Object} location
+ * @property {string} code
+ * @property {string} name
+ * @property {classType} classType
+ * @property {capacity} capacity
+ * @property {number} floor
+ */
+
+/**
+ * @typedef {Object} classType
+ * @property {string} code
+ * @property {string} name
+ */
+
+/**
+ * @typedef {Object} capacity
+ * @property {number} cours
+ * @property {number} exam
  */
 
 //////////// Grades ////////////
@@ -180,12 +247,14 @@ class AurigaAPI {
     SYNC: {
       GRADES: "dataSync/grades.json",
       SYLLABUS: "dataSync/syllabus.json",
-      USERDATA: "dataSync/userData.json"
+      USERDATA: "dataSync/userData.json",
+      EDT: "dataSync/edt.json"
     },
     EXTRACT: {
       GRADES: "dataExtract/gradesData.json",
       SYLLABUS: "dataExtract/syllabusData.json",
-      USERDATA: "dataExtract/userData.json"
+      USERDATA: "dataExtract/userData.json",
+      EDT: "dataExtract/edt.json"
     },
     PAYLOADS: {
       SYLLABUS: "payloads/syllabusPayload.json",
@@ -383,20 +452,58 @@ class AurigaAPI {
     const grades = this._readJsonFile(this.PATHS.EXTRACT.GRADES);
     const syllabus = this._readJsonFile(this.PATHS.EXTRACT.SYLLABUS);
     const userData = this._readJsonFile(this.PATHS.EXTRACT.USERDATA);
+    const edt = this._readJsonFile(this.PATHS.EXTRACT.EDT);
 
     await fs.promises.mkdir("./dataSync", { recursive: true });
 
-    if (!grades || !syllabus || !userData) {
+    if (!grades || !syllabus || !userData || !edt) {
       console.error("Error: Unable to synchronize, extracted data is missing.");
       return;
     }
+
+    fs.writeFileSync(this.PATHS.SYNC.EDT, JSON.stringify(edt.interventions.map(element => {
+      return {
+        "id": element.id,
+        "name": { "code": element.interventionPedagogicalUnits[0].pedagogicalUnit.code, "name": element.interventionPedagogicalUnits[0].pedagogicalUnit.caption.fr },
+        "UE": element.interventionPedagogicalUnits[0].pedagogicalUnit.customAttributes.UE.id,
+        "day": element.startDateTime.split("T")[0],
+        "startTime": (parseInt(element.startDateTime.split("T")[1].split(":")[0]) + 1).toString().padStart(2, '0'),
+        "endTime": (parseInt(element.endDateTime.split("T")[1].split(":")[0]) + 1).toString().padStart(2, '0'),
+        "duration": element.duration,
+        "description": element.interventionResources.resource.description.fr,
+        "timeZone": "UTC+1",
+        "activityType": { "code": element.activityType.code, "name": element.activityType.caption.fr, "isExam": element.isExam },
+        "instructors": [...(element.interventionInstructors || []).map(instructor => {
+          return {
+            "firstName": instructor.person.currentFirstName,
+            "lastName": instructor.person.currentLastName,
+            "login": instructor.person.currentFirstName.toLowerCase() + "." + instructor.person.currentLastName.toLowerCase()
+          }
+        })],
+        "class": [...(element.interventionPopulations || []).map(classStudents => {
+          return {
+            "code": classStudents.population.code,
+            "name": classStudents.population.caption.fr
+          }
+        })],
+        "location": [...(element.interventionResources || []).map(location => {
+          return {
+            "code": location.resource.code,
+            "name": location.resource.caption.fr,
+            "classType": { "code": location.resource.resourceType.code, "name": location.resource.resourceType.caption.fr },
+            "capacity": { "cours": location.resource.totalCapacity, "exam": location.resource.examCapacity },
+            "floor": location.resource.floor
+          }
+        })]
+      }
+    }), null, 2));
 
     fs.writeFileSync(this.PATHS.SYNC.GRADES, JSON.stringify(grades.content.lines.map(element => {
       return {
         "code": element[0],
         "type": element[4],
-        "name": element[2],
-        "semester": parseInt(String(element[2]).split("_")[4].split("S")[1]),
+        "name": element[3],
+        "semester": parseInt(String(element[3]).split("_")[4].split("S")[1]),
         "grade": parseFloat(element[1])
       }
     }), null, 2));
@@ -445,24 +552,24 @@ class AurigaAPI {
         },
         "responsables": element.syllabusResponsibles ? element.syllabusResponsibles.map(responsable => {
           return {
-            "uid": responsable.person.customAttributes.UID,
-            "login": responsable.person.customAttributes.LOGIN,
+            "uid": responsable.person.id,
+            "login": responsable.person.currentFirstName.toLowerCase() + "." + responsable.person.currentLastName.toLowerCase(),
             "lastName": responsable.person.currentLastName,
             "firstName": responsable.person.currentFirstName
           }
         }) : [],
         "instructorsValidator": element.syllabusInstructorValidators ? element.syllabusInstructorValidators.map(instructor => {
           return {
-            "uid": instructor.person.customAttributes.UID,
-            "login": instructor.person.customAttributes.LOGIN,
+            "uid": instructor.person.id,
+            "login": instructor.person.currentFirstName.toLowerCase() + "." + instructor.person.currentLastName.toLowerCase(),
             "lastName": instructor.person.currentLastName,
             "firstName": instructor.person.currentFirstName
           }
         }) : [],
         "instructorsEditors": element.syllabusInstructorEditors ? element.syllabusInstructorEditors.map(instructor => {
           return {
-            "uid": instructor.person.customAttributes.UID,
-            "login": instructor.person.customAttributes.LOGIN,
+            "uid": instructor.person.id,
+            "login": instructor.person.currentFirstName.toLowerCase() + "." + instructor.person.currentLastName.toLowerCase(),
             "lastName": instructor.person.currentLastName,
             "firstName": instructor.person.currentFirstName
           }
@@ -594,12 +701,14 @@ class AurigaAPI {
     }
 
     try {
-      const response = await fetch(`https://auriga.epita.fr/api/plannings/me?days=1&days=2&days=3&days=4&days=5&days=6&days=7&startDate=2026-01-10&endDate=2026-01-30`, {
+
+      const response = await (async (startDate = "2025-09-01", endDate = "2026-08-31") => fetch(`https://auriga.epita.fr/api/plannings/me?days=1&days=2&days=3&days=4&days=5&days=6&days=7&startDate=${startDate}&endDate=${endDate}`, {
         method: "GET",
         headers: {
           "Authorization": "Bearer " + this.#acces_token
         }
-      });
+      }))();
+
       if (!response.ok) {
         throw new Error("Failed to fetch data from Auriga API");
       }
@@ -681,3 +790,6 @@ class AurigaAPI {
     return true;
   }
 }
+
+const client = new AurigaAPI("YOUR_ACCESS_TOKEN");
+client.create();
