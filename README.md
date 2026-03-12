@@ -85,3 +85,5 @@ _💡 Astuce : Le code est entièrement documenté avec JSDoc. Votre IDE devrait
 - `dataExtract/` : Dossier temporaire contenant les réponses brutes de l'API Auriga (supprimé après synchronisation).
 - `dataSync/` : Contient les fichiers JSON formatés et simplifiés, prêts à être utilisés par votre application.
 - `payloads/` : Contient les configurations de recherche pour l'API.
+
+This work is licensed under <a href="https://creativecommons.org/licenses/by-nd/4.0/">Creative Commons Attribution-NoDerivatives 4.0 International</a><img src="https://mirrors.creativecommons.org/presskit/icons/cc.svg" alt="" style="max-width: 1em;max-height:1em;margin-left: .2em;"><img src="https://mirrors.creativecommons.org/presskit/icons/by.svg" alt="" style="max-width: 1em;max-height:1em;margin-left: .2em;"><img src="https://mirrors.creativecommons.org/presskit/icons/nd.svg" alt="" style="max-width: 1em;max-height:1em;margin-left: .2em;">
