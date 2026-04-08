@@ -1,5 +1,4 @@
 const fs = require("fs");
-const { start } = require("repl");
 
 /**
  * @typedef {Object} AurigaAPI
@@ -240,6 +239,24 @@ const { start } = require("repl");
  * @property {string} department
  */
 
+async function getPayload(type) {
+  const URL = type == "syllabus" ? "https://gitlab.com/epimac-asso/projects/chrysalide/ChrysalideApp/-/raw/main/services/auriga/payloads/syllabus.json" : type == "grades" ? "https://gitlab.com/epimac-asso/projects/chrysalide/ChrysalideApp/-/raw/main/services/auriga/payloads/grades.json" : null;
+  if (!URL) {
+    throw new Error("Invalid payload type. Must be 'syllabus' or 'grades'.");
+  }
+
+  const response = await fetch(URL, {
+    method: "GET",
+    headers: {}
+  });
+  const data = await response.json();
+
+  if (typeof data === 'string') {
+    data = JSON.parse(data);
+  }
+  return data;
+}
+
 class AurigaAPI {
   #acces_token;
 
@@ -255,10 +272,6 @@ class AurigaAPI {
       SYLLABUS: "dataExtract/syllabusData.json",
       USERDATA: "dataExtract/userData.json",
       EDT: "dataExtract/edt.json"
-    },
-    PAYLOADS: {
-      SYLLABUS: "payloads/syllabusPayload.json",
-      GRADES: "payloads/gradesPayload.json"
     }
   };
 
@@ -470,9 +483,9 @@ class AurigaAPI {
         "startTime": (parseInt(element.startDateTime.split("T")[1].split(":")[0]) + 1).toString().padStart(2, '0'),
         "endTime": (parseInt(element.endDateTime.split("T")[1].split(":")[0]) + 1).toString().padStart(2, '0'),
         "duration": element.duration,
-        "description": element.interventionResources.resource.description.fr,
         "timeZone": "UTC+1",
         "activityType": { "code": element.activityType.code, "name": element.activityType.caption.fr, "isExam": element.isExam },
+        "status": element.interventionStatus.code,
         "instructors": [...(element.interventionInstructors || []).map(instructor => {
           return {
             "firstName": instructor.person.currentFirstName,
@@ -623,6 +636,7 @@ class AurigaAPI {
       },
       "student": {
         "login": userData.person.LOGIN,
+        "class": userData.person.customAttributes.EntryClass,
         "schoolMail": userData.person.contactDetails[0].contactInformation,
         "mail": userData.person.contactDetails[1].contactInformation,
         "phone": userData.person.contactDetails[2].contactInformation,
@@ -650,19 +664,18 @@ class AurigaAPI {
   }
 
   async #getSyllabuses() {
-    const syllabusPayload = this._readJsonFile(this.PATHS.PAYLOADS.SYLLABUS);
-    const url = "menuEntries/166/searchResult?size=100&page=1&sort=id";
+    const syllabusPayload = await getPayload("syllabus");
 
     const sylabuses = [];
 
-    const postDataToAuriga = async (endpoint, payload) => {
-      const response = await fetch(`https://auriga.epita.fr/api/${endpoint}`, {
+    const postDataToAuriga = async () => {
+      const response = await fetch(`https://auriga.epita.fr/api/menuEntries/166/searchResult?size=100&page=1&sort=id`, {
         method: "POST",
         headers: {
           "Authorization": "Bearer " + this.#acces_token,
           "Content-Type": "application/json"
         },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(syllabusPayload)
       });
       if (!response.ok) {
         const text = await response.text();
@@ -675,7 +688,6 @@ class AurigaAPI {
     if (!syllabusPayload) {
       throw new Error("Payloads not found. Check the payloads folder.");
     }
-
     const response = await fetch(`https://auriga.epita.fr/api/menuEntries/166/courseCatalogDefinitions?sortBy=code,asc`, {
       method: "GET",
       headers: {
@@ -688,10 +700,31 @@ class AurigaAPI {
     const data = await response.json();
     for (const element of data.content) {
       syllabusPayload.searchResultDefinition.filtersCustom.id = element.id;
-      await postDataToAuriga(url, syllabusPayload);
+      await postDataToAuriga();
     }
 
     return [...new Set(sylabuses)];
+  }
+
+async #getGrades() {
+    const gradesPayload = await getPayload("grades");
+    const postDataToAuriga = async () => {
+      const response = await fetch(`https://auriga.epita.fr/api/menuEntries/1036/searchResult?size=100&page=1&sort=id&disableWarnings=true`, {
+        method: "POST",
+        headers: {
+          "Authorization": "Bearer " + this.#acces_token,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(gradesPayload)
+      });
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(`Failed to fetch data from Auriga API. Status: ${response.status} ${response.statusText}. Response: ${text}`);
+      }
+      const data = await response.json();
+      fs.writeFileSync(this.PATHS.EXTRACT.GRADES, JSON.stringify(data, null, 2));
+    };
+    await postDataToAuriga();
   }
 
   async create() {
@@ -748,22 +781,7 @@ class AurigaAPI {
         }
         return true;
       };
-      const postDataToAuriga = async (endpoint, payload, file) => {
-        const response = await fetch(`https://auriga.epita.fr/api/${endpoint}`, {
-          method: "POST",
-          headers: {
-            "Authorization": "Bearer " + this.#acces_token,
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify(payload)
-        });
-        if (!response.ok) {
-          const text = await response.text();
-          throw new Error(`Failed to fetch data from Auriga API. Status: ${response.status} ${response.statusText}. Response: ${text}`);
-        }
-        const data = await response.json();
-        fs.writeFileSync(file, JSON.stringify(data, null, 2));
-      };
+
       await fs.promises.mkdir("./dataExtract", { recursive: true });
 
       await getDataFromAuriga("me", this.PATHS.EXTRACT.USERDATA);
@@ -773,12 +791,7 @@ class AurigaAPI {
         await getDataFromAuriga(`menuEntries/166/syllabuses/${element}`, this.PATHS.EXTRACT.SYLLABUS);
       }
 
-      const gradesPayload = this._readJsonFile(this.PATHS.PAYLOADS.GRADES);
-      if (!gradesPayload) {
-        throw new Error("Payloads not found. Check the payloads folder.");
-      }
-      await postDataToAuriga("menuEntries/1036/searchResult?size=100&page=1&sort=id&disableWarnings=true", gradesPayload, this.PATHS.EXTRACT.GRADES);
-
+      await this.#getGrades();
       await this.#dataSync();
       //await fs.promises.rm("./dataExtract", { recursive: true, force: true });
 
@@ -791,5 +804,5 @@ class AurigaAPI {
   }
 }
 
-const client = new AurigaAPI("YOUR_ACCESS_TOKEN");
+const client = new AurigaAPI("eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJhU2xwY2lHa2wzMExiakl4LW9KZWkxNFFOR0xEY2Z3TDI2RUtubXlTNjNvIn0.eyJleHAiOjE3NzU2NDA2MjEsImlhdCI6MTc3NTY0MDU2MSwiYXV0aF90aW1lIjoxNzc1NjQwNTU5LCJqdGkiOiJmZjUxMmRhNC00OGI2LTQ0ODctYTFkNy1hMGE3NDM5YTYxZGIiLCJpc3MiOiJodHRwczovL2lvbmlzZXBpdGEtYXV0aC5ucC1hdXJpZ2EubmZyYW5jZS5uZXQvYXV0aC9yZWFsbXMvbnBpb25pc2VwaXRhIiwiYXVkIjpbIm5wLWFwaSIsImFjY291bnQiXSwic3ViIjoiZjE3ZmI3MDItZmM0OS00ZWI5LTgyMTYtZTk3NTUwNThmNDk2IiwidHlwIjoiQmVhcmVyIiwiYXpwIjoibnAtZnJvbnQiLCJub25jZSI6ImFmNDE5ZWM5LTg0N2YtNDZhMy04NjM2LTZjYWJhZTQ5YmMwZiIsInNlc3Npb25fc3RhdGUiOiIzZTg5YTA2Zi1mN2M2LTQ0MGYtYTJiNS1hNjM0NDIxZGU0OTEiLCJhbGxvd2VkLW9yaWdpbnMiOlsiaHR0cHM6Ly9pb25pc2VwaXRhLXRlc3QubnAtYXVyaWdhLm5mcmFuY2UubmV0IiwiaHR0cHM6Ly9hdXJpZ2EuZXBpdGEuZnIiLCJodHRwczovL2lvbmlzZXBpdGEtcHJlcHJvZC5ucC1hdXJpZ2EubmZyYW5jZS5uZXQiLCJodHRwczovL2F1cmlnYS1wcnAuZXBpdGEuZnIiLCJodHRwczovL2F1cmlnYS10ZXN0LmVwaXRhLmZyIiwiaHR0cHM6Ly9pb25pc2VwaXRhLXByb2R1Y3Rpb24ubnAtYXVyaWdhLm5mcmFuY2UubmV0Il0sInJlYWxtX2FjY2VzcyI6eyJyb2xlcyI6WyJvZmZsaW5lX2FjY2VzcyIsInVtYV9hdXRob3JpemF0aW9uIiwiZGVmYXVsdC1yb2xlcy1ucCJdfSwicmVzb3VyY2VfYWNjZXNzIjp7ImFjY291bnQiOnsicm9sZXMiOlsibWFuYWdlLWFjY291bnQiLCJtYW5hZ2UtYWNjb3VudC1saW5rcyIsInZpZXctcHJvZmlsZSJdfX0sInNjb3BlIjoib3BlbmlkIHByb2ZpbGUgZW1haWwiLCJzaWQiOiIzZTg5YTA2Zi1mN2M2LTQ0MGYtYTJiNS1hNjM0NDIxZGU0OTEiLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwibmFtZSI6Ikdhw6tsIEJFTk1BSElFRERJTkUiLCJwcmVmZXJyZWRfdXNlcm5hbWUiOiJnYWVsLmJlbm1haGllZGRpbmVAZXBpdGEuZnIiLCJnaXZlbl9uYW1lIjoiR2HDq2wiLCJmYW1pbHlfbmFtZSI6IkJFTk1BSElFRERJTkUiLCJlbWFpbCI6ImdhZWwuYmVubWFoaWVkZGluZUBlcGl0YS5mciJ9.NIHwhpA8p6KQ0QQi2tYo50YGq8d5FYRFoSIzaB_lLtKVLPfMlh0pp3iEs6UixSH-cx46Cdq-zcPYO_D0Fhhu6JET9c1ezc9DwUPd91iRG9RTAIMrJ8PdRuGVH456toj7xqHyOkJVIFM3V8MBY2alyikjcvCDXVwQyV-1Ps0QntzZyaywgo7YqehUEJS89Tm-OovZu8jHbnYdZHiO4qa72x7_ahXwC7AJ9I7fgGLstEHyi-Wv_XBL2wf8ZaGQGU0sZNdh8vyvrJ2usZzqL2rlA2xUkKCIdKBRc6BPaNuDT1CsAEVtc9ZuQLNd7PgBnZpE9W4tsd1izKEJiuS1INWFHQ");
 client.create();

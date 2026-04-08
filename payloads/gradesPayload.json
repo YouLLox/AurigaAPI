@@ -178,23 +178,23 @@
                                 ]
                             },
                             {
-                                "guid": "c7bf8cdb-b98b-4872-936d-a87cb7b2eaa8",
+                                "guid": "8f2a63d0-8160-4e07-8c92-2cd2e368acdb",
                                 "visible": true,
-                                "path": "Registration-obligation-exam",
+                                "path": "Registration",
                                 "api": "exams",
-                                "field": "intervention",
+                                "field": "exam",
                                 "label": {
-                                    "en": "Exam.Intervention",
-                                    "fr": "Épreuve.Intervention"
+                                    "en": "Relation: Exam -> Intervention",
+                                    "fr": "Relation: Epreuve -> Intervention (Epreuve)"
                                 },
                                 "defaultLabel": {
-                                    "en": "Intervention",
-                                    "fr": "Intervention"
+                                    "en": "Relation: Exam -> Intervention",
+                                    "fr": "Relation: Epreuve -> Intervention (Epreuve)"
                                 },
                                 "modelName": "Exam",
-                                "modelDestName": "Intervention",
-                                "isReverted": null,
-                                "type": "foreignkey",
+                                "modelDestName": "ExamIntervention",
+                                "isReverted": true,
+                                "type": "primaryforeignkey",
                                 "order": null,
                                 "orderGlobal": null,
                                 "excluded": false,
@@ -204,31 +204,59 @@
                                 "isParameterized": null,
                                 "children": [
                                     {
-                                        "guid": "88124acc-a8ff-43ca-8c3d-a7c220852e83",
-                                        "visible": false,
-                                        "path": "Registration-obligation-exam-intervention",
-                                        "api": "interventions",
-                                        "field": "startDateTime",
+                                        "guid": "113028a1-0f01-4dae-9ee3-e03b3c0d5860",
+                                        "visible": true,
+                                        "path": "Registration-obligation-exam-ExamIntervention-exam-intervention",
+                                        "api": null,
+                                        "field": "intervention",
                                         "label": {
-                                            "en": "Date",
-                                            "fr": "Date"
+                                            "en": "Relation: Exam -> Intervention.Intervention",
+                                            "fr": "Relation: Epreuve -> Intervention (Epreuve).Intervention"
                                         },
                                         "defaultLabel": {
-                                            "en": "Start",
-                                            "fr": "Début"
+                                            "en": "Intervention",
+                                            "fr": "Intervention"
                                         },
-                                        "modelName": "Intervention",
-                                        "modelDestName": null,
+                                        "modelName": "ExamIntervention",
+                                        "modelDestName": "Intervention",
                                         "isReverted": null,
-                                        "type": "timestamptz",
-                                        "order": 12,
-                                        "orderGlobal": 8,
-                                        "excluded": null,
+                                        "type": "primaryforeignkey",
+                                        "order": null,
+                                        "orderGlobal": null,
+                                        "excluded": false,
                                         "isDisplayedInSelect": true,
                                         "multilingual": false,
                                         "isCustom": false,
                                         "isParameterized": null,
-                                        "children": null
+                                        "children": [
+                                            {
+                                                "guid": "88124acc-a8ff-43ca-8c3d-a7c220852e83",
+                                                "visible": false,
+                                                "path": "Registration-obligation-exam-ExamIntervention-exam-intervention-intervention",
+                                                "api": "interventions",
+                                                "field": "startDateTime",
+                                                "label": {
+                                                    "en": "Date",
+                                                    "fr": "Date"
+                                                },
+                                                "defaultLabel": {
+                                                    "en": "Start",
+                                                    "fr": "Début"
+                                                },
+                                                "modelName": "Intervention",
+                                                "modelDestName": null,
+                                                "isReverted": null,
+                                                "type": "timestamptz",
+                                                "order": 12,
+                                                "orderGlobal": 8,
+                                                "excluded": null,
+                                                "isDisplayedInSelect": true,
+                                                "multilingual": false,
+                                                "isCustom": false,
+                                                "isParameterized": null,
+                                                "children": null
+                                            }
+                                        ]
                                     }
                                 ]
                             },
@@ -826,7 +854,8 @@
                         "today"
                     ],
                     "isParameterized": null,
-                    "ignoreParameterized": false
+                    "ignoreParameterized": false,
+                    "isQueryVariable": null
                 }
             ]
         },
